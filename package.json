@@ -2,7 +2,7 @@
   "name": "tek23bot",
   "version": "1.0.0",
   "description": "A multipurpose Discord bot that interfaces with mutliple tools",
-  "main": "tek23bot.js",
+  "main": "tek23.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -18,6 +18,7 @@
     "google-auth-library": "^6.0.1",
     "googleapis": "^52.1.0",
     "pubsubhubbub": "^1.0.1",
-    "readline": "^1.3.0"
+    "readline": "^1.3.0",
+    "xml2js": "^0.4.23"
   }
 }

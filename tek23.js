@@ -5,7 +5,8 @@ const Discord = require('discord.js'),
 
 // json files to load
 const cfg_discord = require('./config/discord.json'),
-        cfg_pubsub = require('./config/pubsubhubbub.json');
+        cfg_pubsub = require('./config/pubsubhubbub.json'),
+        videolog = require('./videolog.json');
 
 // Discord Initialization
 const client = new Discord.Client();
@@ -57,14 +58,25 @@ pubsub.on("feed", function(data){
     console.log("feed incoming.");
     
     parser.parseString(data.feed.toString(), function (err, result) {
-        fs.writeFileSync('youtubeFeedData.json', JSON.stringify(result));
+        fs.writeFileSync('youtubeFeedData.json', JSON.stringify(result, null, 2));
     });
 
     if (fs.existsSync('./youtubeFeedData.json')) {
-        var youtubeFeedData = require('./youtubeFeedData.json');
-        var videoLink = youtubeFeedData['entry'][0]['link'][0]['$']['href'];
-        
-        videoChannel.send(videoLink);
+        const youtubeFeedData = require('./youtubeFeedData.json');
+        let videoLink = youtubeFeedData['entry'][0]['link'][0]['$']['href'];
+
+        videolog.log.forEach(element => {
+            let compare = element.localeCompare(videoLink);
+            if (compare = 0) {
+                console.log('video is already in the log.')
+                return;
+            } else {
+                videolog.log.push(videoLink);
+                videoChannel.send(videoLink);
+                console.log('video added to log.');
+            }
+        });
+        pubsub.unsubscribe(topic, hub);
 
     } else {
         console.log('youtubeFeedData.json not found');
@@ -73,5 +85,15 @@ pubsub.on("feed", function(data){
 
 // Discord functions
 client.on('message', message => {
-    
+    switch (message) {
+        case cfg_discord.prefix + 'exit':
+            pubsub.unsubscribe(topic, hub);
+            process.exit();
+        default:
+            if (message.content.startsWith(cfg_discord.prefix)) {
+                message.channel.send("That command was not recognized.")
+            } else {
+                break;
+            }
+    }    
 });

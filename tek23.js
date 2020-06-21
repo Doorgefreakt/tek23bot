@@ -62,21 +62,21 @@ pubsub.on("listen", function(){
 
 pubsub.on("feed", function(data){
     const parser = new xml2js.Parser({explicitRoot: false}, {mergeAttrs: true});
-
     const videoChannel = client.channels.cache.get(channelIds[0].videos);
-
-    console.log("feed incoming.");
     
     parser.parseString(data.feed.toString(), function (err, result) {
         fs.writeFileSync('./log/feed/youtubeFeedData.json', JSON.stringify(result, null, 2));
     });
 
     if (fs.existsSync('./log/feed/youtubeFeedData.json')) {
-        let youtubeFeedData = require('./log/feed/youtubeFeedData.json');
-        let videoLink = youtubeFeedData['entry'][0]['link'][0]['$']['href'];
-        let videoTitle = youtubeFeedData['entry'][0]['title'][0];
-        let videoTime = youtubeFeedData['updated'][0];
-
+        const youtubeFeedData = require('./log/feed/youtubeFeedData.json');
+        const videoLink = youtubeFeedData['entry'][0]['link'][0]['$']['href'];
+        if (youtubeDataHandler(videoLink) == true) {
+            console.log("Link not found, added to database.");
+            videoChannel.send(videoLink);
+        } else {
+            console.log("Link found in database.")
+        }
     } else {
         console.log('youtubeFeedData.json not found');
     }
@@ -85,6 +85,7 @@ pubsub.on("feed", function(data){
 // Discord functions
 client.on('message', message => {
     switch (message.content) {
+                // FIX THIS, doesnt recognise prefix
         case `${prefix}exit`:
             console.log("Tek23 will now shut down");
             pubsub.unsubscribe(topic, hub);
@@ -112,4 +113,29 @@ function getTime(format) {
         default:
             return now.format();
     }
+}
+
+function youtubeDataHandler(link) {
+    const youtubeFeedData = require('./log/feed/youtubeFeedData.json');
+    const videoLink = youtubeFeedData['entry'][0]['link'][0]['$']['href'];
+    const videoTitle = youtubeFeedData['entry'][0]['title'][0];
+    const videoTime = youtubeFeedData['updated'][0];
+    const findLinkSQL = `SELECT id FROM videologs WHERE link = '${videoLink}'`;
+    const addVideoSQL = `INSERT INTO videologs (time, title, link) VALUES ('${videoTime}', '${videoTitle}', '${videoLink}')`;
+
+    con.connect(function(err) {
+        if (err) throw err;
+        con.query(findLinkSQL, function (err, result, fields) {
+            if (err) throw err;
+            if (result.length == 0) {
+                con.query(addVideoSQL, function (err, result) {
+                    if (err) throw err;
+                    return true;
+                });
+            
+            } else {
+                return false;
+            }
+        });
+    });
 }

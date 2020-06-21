@@ -5,7 +5,7 @@ const Discord = require('discord.js'),
 
 // json files to load
 const { prefix, token, channelIds }= require('./config/discord.json');
-const { port, callbackURL, topic, hub } = require('./config/pubsubhubbub.json');
+const cfg_pubhub = require('./config/pubsubhubbub.json');
 const videolog = require('./videolog.json');
 
 // Discord Initialization
@@ -21,11 +21,11 @@ const pubSubHubbub = require("pubsubhubbub"),
     crypto = require("crypto"),
     
     pubsub = pubSubHubbub.createServer({
-        callbackUrl: `${callbackURL}`,
+        callbackUrl: cfg_pubhub.callbackURL,
     }),
     
-    topic = `${topic}`,
-    hub = `${hub}`;
+    topic = cfg_pubhub.topic,
+    hub = cfg_pubhub.hub;
 
 pubsub.listen(port);
 

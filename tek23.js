@@ -1,12 +1,22 @@
 // npm plugins
 const Discord = require('discord.js'),
         fs = require('fs'),
-        xml2js = require('xml2js');
+        xml2js = require('xml2js'),
+        mysql = require('mysql');
 
 // json files to load
 const { prefix, token, channelIds }= require('./config/discord.json');
-const cfg_pubhub = require('./config/pubsubhubbub.json');
-const videolog = require('./videolog.json');
+const cfg_pubhub = require('./config/pubsubhubbub.json'),
+        cfg_mysql = require('./config/mysql.json');
+
+// MySQL Initialization
+let con = mysql.createConnection({
+    user: cfg_mysql.user,
+    password: cfg_mysql.password,
+    host: cfg_mysql.host,
+    port: cfg_mysql.port,
+    database: cfg_mysql.database
+});
 
 // Discord Initialization
 const client = new Discord.Client();
@@ -27,7 +37,7 @@ const pubSubHubbub = require("pubsubhubbub"),
     topic = cfg_pubhub.topic,
     hub = cfg_pubhub.hub;
 
-pubsub.listen(port);
+pubsub.listen(cfg_pubhub.port);
 
 // PubSubHubbub functions
 pubsub.on("subscribe", function(data){
@@ -46,7 +56,7 @@ pubsub.on("error", function(error){
 });
 
 pubsub.on("listen", function(){
-    console.log("Server listening on port %s", port);
+    console.log("Server listening on port %s", cfg_pubhub.port);
     pubsub.subscribe(topic, hub);
 });
 
@@ -58,25 +68,13 @@ pubsub.on("feed", function(data){
     console.log("feed incoming.");
     
     parser.parseString(data.feed.toString(), function (err, result) {
-        fs.writeFileSync('youtubeFeedData.json', JSON.stringify(result, null, 2));
+        fs.writeFileSync('./log/feed/youtubeFeedData.json', JSON.stringify(result, null, 2));
     });
 
-    if (fs.existsSync('./youtubeFeedData.json')) {
-        const youtubeFeedData = require('./youtubeFeedData.json');
+    if (fs.existsSync('./log/feed/youtubeFeedData.json')) {
+        let youtubeFeedData = require('./log/feed/youtubeFeedData.json');
         let videoLink = youtubeFeedData['entry'][0]['link'][0]['$']['href'];
-
-        videolog.log.forEach(element => {
-            let compare = element.localeCompare(videoLink);
-            if (compare = 0) {
-                console.log('video is already in the log.')
-                return;
-            } else {
-                videolog.log.push(videoLink);
-                videoChannel.send(videoLink);
-                console.log('video added to log.');
-            }
-        });
-        pubsub.unsubscribe(topic, hub);
+        let videoTitle = youtubeFeedData['entry'][0]['title'][0];
 
     } else {
         console.log('youtubeFeedData.json not found');
@@ -85,7 +83,7 @@ pubsub.on("feed", function(data){
 
 // Discord functions
 client.on('message', message => {
-    switch (message) {
+    switch (message.content) {
         case `${prefix}exit`:
             console.log("Tek23 will now shut down");
             pubsub.unsubscribe(topic, hub);
@@ -98,3 +96,5 @@ client.on('message', message => {
             }
     }    
 });
+
+// General functions

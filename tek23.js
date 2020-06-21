@@ -4,13 +4,13 @@ const Discord = require('discord.js'),
         xml2js = require('xml2js');
 
 // json files to load
-const cfg_discord = require('./config/discord.json'),
-        cfg_pubsub = require('./config/pubsubhubbub.json'),
-        videolog = require('./videolog.json');
+const { prefix, token, channelIds }= require('./config/discord.json');
+const { port, callbackURL, topic, hub } = require('./config/pubsubhubbub.json');
+const videolog = require('./videolog.json');
 
 // Discord Initialization
 const client = new Discord.Client();
-client.login(cfg_discord.token);
+client.login(`${token}`);
 
 client.once('ready', () => {
     console.log('Tek23 Bot has started.');
@@ -21,22 +21,22 @@ const pubSubHubbub = require("pubsubhubbub"),
     crypto = require("crypto"),
     
     pubsub = pubSubHubbub.createServer({
-        callbackUrl: cfg_pubsub.callbackURL,
+        callbackUrl: `${callbackURL}`,
     }),
     
-    topic = cfg_pubsub.topic,
-    hub = cfg_pubsub.hub;
+    topic = `${topic}`,
+    hub = `${hub}`;
 
-pubsub.listen(cfg_pubsub.port);
+pubsub.listen(port);
 
 // PubSubHubbub functions
 pubsub.on("subscribe", function(data){
-    console.log("Subscribed "+topic);
+    console.log("Subscribed "+ topic);
     console.log("to " + hub);
 });
 
 pubsub.on("unsubscribe", function(data){
-    console.log("Unsubscribed "+topic);
+    console.log("Unsubscribed " + topic);
     console.log("from " + hub);
 });
 
@@ -46,14 +46,14 @@ pubsub.on("error", function(error){
 });
 
 pubsub.on("listen", function(){
-    console.log("Server listening on port %s", pubsub.port);
+    console.log("Server listening on port %s", port);
     pubsub.subscribe(topic, hub);
 });
 
 pubsub.on("feed", function(data){
     const parser = new xml2js.Parser({explicitRoot: false}, {mergeAttrs: true});
 
-    const videoChannel = client.channels.cache.get(channelIdArray.videos);
+    const videoChannel = client.channels.cache.get(channelIds[0].videos);
 
     console.log("feed incoming.");
     
@@ -86,11 +86,12 @@ pubsub.on("feed", function(data){
 // Discord functions
 client.on('message', message => {
     switch (message) {
-        case cfg_discord.prefix + 'exit':
+        case `${prefix}exit`:
+            console.log("Tek23 will now shut down");
             pubsub.unsubscribe(topic, hub);
             process.exit();
         default:
-            if (message.content.startsWith(cfg_discord.prefix)) {
+            if (message.content.startsWith(prefix)) {
                 message.channel.send("That command was not recognized.")
             } else {
                 break;

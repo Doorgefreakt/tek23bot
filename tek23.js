@@ -75,6 +75,7 @@ pubsub.on("feed", function(data){
         let youtubeFeedData = require('./log/feed/youtubeFeedData.json');
         let videoLink = youtubeFeedData['entry'][0]['link'][0]['$']['href'];
         let videoTitle = youtubeFeedData['entry'][0]['title'][0];
+        let videoTime = youtubeFeedData['updated'][0];
 
     } else {
         console.log('youtubeFeedData.json not found');
@@ -98,3 +99,17 @@ client.on('message', message => {
 });
 
 // General functions
+function getTime(format) {
+    const lowerFormat = format.toLowerCase();
+    let now = new Date();
+    switch (lowerFormat) {
+        case "time":
+            return now.format('HH:MM:SS');
+        case "date":
+            return now.format('dd/mm/yyyy');
+        case "datetime":
+            return now.format('HH:MM - dd/mm/yyyy');
+        default:
+            return now.format();
+    }
+}
